@@ -17,7 +17,7 @@
     "typescript"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "Banking MCP server that exposes accounts and transactions resources",
   "devDependencies": {
     "@eslint/js": "^9.23.0",
