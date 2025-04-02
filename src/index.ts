@@ -117,48 +117,16 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
-// Get all accounts with optional filtering
+// Get all accounts
 server.resource(
   "accounts-list",
-  new ResourceTemplate("accounts{?name,type,balanceMin,status}", { list: undefined }),
-  async (uri, params) => {
-    let filteredAccounts = [...accounts];
-    
-    // Apply filters based on query parameters
-    if (params.name) {
-      const name = Array.isArray(params.name) ? params.name[0] : params.name;
-      filteredAccounts = filteredAccounts.filter(account => 
-        account.name.toLowerCase().includes(name.toLowerCase())
-      );
-    }
-    
-    if (params.type) {
-      const type = Array.isArray(params.type) ? params.type[0] : params.type;
-      filteredAccounts = filteredAccounts.filter(account => 
-        account.type === type
-      );
-    }
-    
-    if (params.balanceMin) {
-      const balanceMin = Array.isArray(params.balanceMin) ? params.balanceMin[0] : params.balanceMin;
-      const minBalance = parseFloat(balanceMin);
-      filteredAccounts = filteredAccounts.filter(account => 
-        account.balance >= minBalance
-      );
-    }
-    
-    if (params.status) {
-      const status = Array.isArray(params.status) ? params.status[0] : params.status;
-      filteredAccounts = filteredAccounts.filter(account => 
-        account.status === status
-      );
-    }
-    
+  new ResourceTemplate("accounts", { list: undefined }),
+  async (uri) => {
     return {
       contents: [
         {
           uri: uri.href,
-          text: JSON.stringify(filteredAccounts, null, 2)
+          text: JSON.stringify(accounts, null, 2)
         }
       ]
     };
@@ -195,13 +163,13 @@ server.resource(
   }
 );
 
-// Create the transactions resource template with proper completion support
+// Create the transactions resource template
 const transactionsTemplate = new ResourceTemplate(
-  "accounts/{id}/transactions{?recipient,sender,amountMin,amountMax,transactionType,dateFrom,dateTo}", 
+  "accounts/{id}/transactions", 
   { list: undefined }
 );
 
-// Get transactions for a specific account with optional filtering
+// Get transactions for a specific account
 server.resource(
   "transactions",
   transactionsTemplate,
@@ -222,59 +190,7 @@ server.resource(
     }
     
     // Get transactions for this account
-    let accountTransactions = transactions.filter(tx => tx.accountId === id);
-    
-    // Apply filters
-    if (params.recipient) {
-      const recipient = Array.isArray(params.recipient) ? params.recipient[0] : params.recipient;
-      accountTransactions = accountTransactions.filter(tx => 
-        tx.recipient?.toLowerCase().includes(recipient.toLowerCase())
-      );
-    }
-    
-    if (params.sender) {
-      const sender = Array.isArray(params.sender) ? params.sender[0] : params.sender;
-      accountTransactions = accountTransactions.filter(tx => 
-        tx.sender?.toLowerCase().includes(sender.toLowerCase())
-      );
-    }
-    
-    if (params.amountMin) {
-      const amountMin = Array.isArray(params.amountMin) ? params.amountMin[0] : params.amountMin;
-      const min = parseFloat(amountMin);
-      accountTransactions = accountTransactions.filter(tx => tx.amount >= min);
-    }
-    
-    if (params.amountMax) {
-      const amountMax = Array.isArray(params.amountMax) ? params.amountMax[0] : params.amountMax;
-      const max = parseFloat(amountMax);
-      accountTransactions = accountTransactions.filter(tx => tx.amount <= max);
-    }
-    
-    if (params.transactionType) {
-      const transactionType = Array.isArray(params.transactionType) 
-        ? params.transactionType[0] 
-        : params.transactionType;
-      accountTransactions = accountTransactions.filter(tx => 
-        tx.transactionType === transactionType
-      );
-    }
-    
-    if (params.dateFrom) {
-      const dateFrom = Array.isArray(params.dateFrom) ? params.dateFrom[0] : params.dateFrom;
-      const fromDate = new Date(dateFrom);
-      accountTransactions = accountTransactions.filter(tx => 
-        new Date(tx.date) >= fromDate
-      );
-    }
-    
-    if (params.dateTo) {
-      const dateTo = Array.isArray(params.dateTo) ? params.dateTo[0] : params.dateTo;
-      const toDate = new Date(dateTo);
-      accountTransactions = accountTransactions.filter(tx => 
-        new Date(tx.date) <= toDate
-      );
-    }
+    const accountTransactions = transactions.filter(tx => tx.accountId === id);
     
     return {
       contents: [
@@ -378,15 +294,17 @@ server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
   // Create resources list for accounts
   const accountResources = accounts.map(account => ({
     uri: `accounts/${account.id}`,
-    name: `${account.name}'s ${account.type} Account`,
-    description: `Balance: $${account.balance.toFixed(2)}, Status: ${account.status}`
+    name: `${account.type} Account, ${account.id}`,
+    description: `A ${account.type} account for ${account.name}. Balance: $${account.balance.toFixed(2)}, Status: ${account.status}`,
+    mimeType: "application/json"
   }));
 
   // Create a general accounts resource
   const allAccountsResource = {
     uri: "accounts",
     name: "All Accounts",
-    description: "List of all bank accounts with optional filtering"
+    description: "List of all bank accounts",
+    mimeType: "application/json"
   };
 
   // Create transaction resources for each account
@@ -396,10 +314,11 @@ server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
     
     return {
       uri: `accounts/${account.id}/transactions`,
-      name: `Transactions for ${account.name}`,
-      description: `${accountTransactions.length} transactions`
+      name: `Transactions for ${account.id}`,
+      description: `The set of transactions for ${account.id} with ${accountTransactions.length} transactions`,
+      mimeType: "application/json"
     };
-  }).filter((resource): resource is { uri: string; name: string; description: string } => 
+  }).filter((resource): resource is { uri: string; name: string; description: string; mimeType: string } => 
     resource !== null
   );
 
@@ -495,22 +414,12 @@ server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   };
 });
 
-// Completion helper functions
+// Completion helper function for account IDs
 const getMatchingAccountIds = (partialId: string) => {
   return accounts
     .filter(account => account.id.startsWith(partialId))
     .map(account => account.id);
 };
-
-const getMatchingValues = (partialValue: string, validValues: string[]) => {
-  const partial = (partialValue || "").toLowerCase();
-  return validValues.filter(value => value.startsWith(partial));
-};
-
-// Valid enumeration values
-const transactionTypes = ["deposit", "withdrawal", "transfer", "payment"];
-const accountTypes = ["checking", "savings", "credit"];
-const accountStatuses = ["active", "inactive", "closed"];
 
 // Handle completion requests
 server.server.setRequestHandler(CompleteRequestSchema, async (request) => {
@@ -531,8 +440,7 @@ server.server.setRequestHandler(CompleteRequestSchema, async (request) => {
     // Check if this is a request for a resource that has an account ID parameter
     if (
       ref.uri === "accounts/{id}" || 
-      ref.uri === "accounts/{id}/transactions" || 
-      ref.uri.startsWith("accounts/{id}/transactions{?")
+      ref.uri === "accounts/{id}/transactions"
     ) {
       return {
         completion: {
@@ -541,36 +449,6 @@ server.server.setRequestHandler(CompleteRequestSchema, async (request) => {
         }
       };
     }
-  }
-  
-  // Handle transaction type completion
-  if (argument.name === "transactionType" && ref.uri.includes("transactions{?")) {
-    return {
-      completion: {
-        values: getMatchingValues(argument.value, transactionTypes),
-        hasMore: false
-      }
-    };
-  }
-  
-  // Handle account type completion
-  if (argument.name === "type" && ref.uri.startsWith("accounts{?")) {
-    return {
-      completion: {
-        values: getMatchingValues(argument.value, accountTypes),
-        hasMore: false
-      }
-    };
-  }
-  
-  // Handle account status completion
-  if (argument.name === "status" && ref.uri.startsWith("accounts{?")) {
-    return {
-      completion: {
-        values: getMatchingValues(argument.value, accountStatuses),
-        hasMore: false
-      }
-    };
   }
   
   // Default to empty completion

@@ -33,24 +33,11 @@ npm run dev
 ### Accounts
 
 - `accounts` - Returns all accounts
-- `accounts{?name,type,balanceMin,status}` - Filters accounts by:
-  - `name`: Partial match on account holder name
-  - `type`: "checking", "savings", or "credit"
-  - `balanceMin`: Minimum account balance
-  - `status`: "active", "inactive", or "closed"
 - `accounts/{id}` - Returns a specific account by ID
 
 ### Transactions
 
 - `accounts/{id}/transactions` - Returns all transactions for a specific account
-- `accounts/{id}/transactions{?recipient,sender,amountMin,amountMax,transactionType,dateFrom,dateTo}` - Filters transactions by:
-  - `recipient`: Recipient name (partial match)
-  - `sender`: Sender account (partial match)
-  - `amountMin`: Minimum transaction amount
-  - `amountMax`: Maximum transaction amount
-  - `transactionType`: "deposit", "withdrawal", "transfer", or "payment"
-  - `dateFrom`: Start date (ISO format)
-  - `dateTo`: End date (ISO format)
 
 ## Tools
 
@@ -77,14 +64,19 @@ Parameters:
 
 ## Example Usage
 
-Fetch all checking accounts with a minimum balance of 1000:
+Get all accounts:
 ```
-accounts?type=checking&balanceMin=1000
+accounts
 ```
 
-Get all transactions for account "acc-001" that are payments with a minimum amount of 50:
+Get a specific account:
 ```
-accounts/acc-001/transactions?transactionType=payment&amountMin=50
+accounts/acc-001
+```
+
+Get all transactions for account "acc-001":
+```
+accounts/acc-001/transactions
 ```
 
 ## Implementation Details
@@ -93,15 +85,12 @@ This MCP server follows the RFC6570 URI Template specification and is built usin
 
 ## Completion Support
 
-The server provides autocompletion for various resource parameters:
+The server provides autocompletion for resource parameters:
 
 - Account IDs in specific account detail paths (`accounts/{id}`)
 - Account IDs in transaction resource paths (`accounts/{id}/transactions`)
-- Transaction types (`deposit`, `withdrawal`, `transfer`, `payment`)
-- Account types (`checking`, `savings`, `credit`)
-- Account status (`active`, `inactive`, `closed`)
 
-This helps LLMs accurately construct valid resource URLs by providing possible values for template parameters.
+This helps LLMs accurately construct valid resource URLs by providing possible values for the account ID parameter.
 
 ## Development
 
