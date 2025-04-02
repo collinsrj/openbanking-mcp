@@ -399,13 +399,15 @@ server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       name: `Transactions for ${account.name}`,
       description: `${accountTransactions.length} transactions`
     };
-  }).filter(resource => resource !== null);
+  }).filter((resource): resource is { uri: string; name: string; description: string } => 
+    resource !== null
+  );
 
   return {
     resources: [
       allAccountsResource,
       ...accountResources,
-      ...(transactionResources as any[])
+      ...transactionResources
     ]
   };
 });
@@ -427,7 +429,7 @@ server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if URI is for a specific account
-  const accountMatch = uri.match(/^accounts\/([^\/]+)$/);
+  const accountMatch = uri.match(/^accounts\/([^/]+)$/);
   if (accountMatch) {
     const accountId = accountMatch[1];
     const account = accounts.find(acc => acc.id === accountId);
@@ -454,7 +456,7 @@ server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if URI is for transactions of a specific account
-  const transactionMatch = uri.match(/^accounts\/([^\/]+)\/transactions$/);
+  const transactionMatch = uri.match(/^accounts\/([^/]+)\/transactions$/);
   if (transactionMatch) {
     const accountId = transactionMatch[1];
     const account = accounts.find(acc => acc.id === accountId);
@@ -584,8 +586,9 @@ server.server.setRequestHandler(CompleteRequestSchema, async (request) => {
 const transport = new StdioServerTransport();
 
 // Silence the console logs to avoid interfering with stdio
-const originalConsoleLog = console.log;
-console.log = (...args) => {
+// We need to replace console.log to prevent it from interfering with stdio
+// eslint-disable-next-line no-console
+console.log = () => {
   // Disable console.log outputs
   // Use process.stderr.write("message\n") if you need to log
 };
