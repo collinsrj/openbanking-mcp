@@ -24,9 +24,26 @@ npm install
 
 ### Running the server
 
+Development mode:
 ```bash
 npm run dev
 ```
+
+Production mode:
+```bash
+npm run build
+npm run start
+```
+
+### Testing with MCP Inspector
+
+You can test and interact with the MCP server using the MCP Inspector tool:
+
+```bash
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+This will launch the MCP Inspector UI in your browser, allowing you to explore the available resources, test API calls, and verify the implementation.
 
 ## Resources
 
@@ -115,6 +132,25 @@ npm run build
 # Run production build
 npm run start
 ```
+
+### Debugging with MCP Inspector
+
+The MCP Inspector is a powerful tool for debugging and exploring your MCP server implementation:
+
+```bash
+# Run against the built version
+npx @modelcontextprotocol/inspector node dist/index.js
+
+# Run against the development version (using ts-node)
+npx @modelcontextprotocol/inspector npm run dev
+```
+
+MCP Inspector features:
+- Interactive UI to browse available resources and tools
+- Test completions and resource lookups
+- View request/response logs
+- Execute tool calls
+- Validate your MCP implementation against the specification
 
 ### CI/CD
 

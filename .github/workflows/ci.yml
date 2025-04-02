@@ -64,7 +64,3 @@ jobs:
       
       - name: Run npm audit
         run: npm audit
-        continue-on-error: true
-      
-      - name: Run dependency check
-        uses: advanced-security/npm-dependency-submission-action@v4
